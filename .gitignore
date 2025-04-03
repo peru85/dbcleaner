@@ -1,0 +1,13 @@
+.Python
+venv/
+
+*.log
+*.sql.gz
+
+.env
+
+docker-compose.override.yml
+
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,18 @@
+databases:
+  - name: testdb
+    tables:
+      - name: posts
+        dump_before: true
+        dump_storage: s3    # local or s3
+        # dump_path: ./dumps
+        run_optimize: true
+        delete_strategy: condition
+        delete_condition: "date < '2020-01-01'"
+        check_foreign_keys: false
+      - name: authors
+        dump_before: true
+        dump_storage: local
+        dump_path: ./dumps
+        run_optimize: false
+        delete_strategy: truncate
+        check_foreign_keys: true

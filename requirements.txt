@@ -1,0 +1,4 @@
+PyYAML
+mysql.connector
+boto3
+dotenv
