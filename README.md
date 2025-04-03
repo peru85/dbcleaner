@@ -14,7 +14,10 @@ define a model.yml. See the example file for reference.
 use the .env.template to create your own .env with your own config. It is by default filled to connect to the local testing mysql.
 
 ### as a local script
->python3 dbcleaner.py -h
+
+```bash
+python3 dbcleaner.py -h
+```
 usage: dbcleaner.py [-h] [--dry-run] [--config CONFIG]
 
 MySQL Maintenance Script
