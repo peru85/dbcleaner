@@ -4,10 +4,10 @@ import logging
 from botocore.exceptions import NoCredentialsError, ClientError
 from dotenv import load_dotenv
 
-# Load AWS credentials from .env file
+# Class to upload sql dumps to s3. configuration is loaded from .env,
+# see the .env.template for reference
 load_dotenv()
 
-# Configure logging for this module
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
