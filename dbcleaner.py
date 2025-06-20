@@ -86,8 +86,11 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     host = conn_params['host']
     user = conn_params['user']
     password = conn_params['password']
-
     mysqldump_cmd = conn_params.get("mysqldump_path", "mysqldump")
+    dump_args = [mysqldump_cmd, '-h', host, '-u', user, f'-p{password}', db_name, table_name]
+    masked_dump = ' '.join(dump_args).replace(f'-p{password}', '-p****')
+
+
     cmd = (
         f"{mysqldump_cmd} -h {conn_params['host']} -u {conn_params['user']} "
         f"-p{conn_params['password']} {db_name} {table_name} | gzip > {dump_file}"
@@ -101,7 +104,7 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     masked_bash_cmd = bash_cmd.replace(f"-p{password}", "-p****")
 
     if dry_run:
-        logger.info("[DRY RUN] Would execute dump command: %s", masked_bash_cmd)
+        logger.info("[DRY RUN] Would execute dump command: %s", masked_dump)
     else:
         logger.info("Dumping table `%s`.`%s` to %s", db_name, table_name, dump_file)
         try:
