@@ -90,9 +90,10 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
         f"{mysqldump_cmd} -h {conn_params['host']} -u {conn_params['user']} "
         f"-p{conn_params['password']} {db_name} {table_name} | gzip > {dump_file}"
     )
+    masked_cmd = cmd.replace(f"-p{password}", "-p****")
 
     if dry_run:
-        logger.info("[DRY RUN] Would execute dump command: %s", cmd)
+        logger.info("[DRY RUN] Would execute dump command: %s", masked_cmd)
     else:
         logger.info("Dumping table `%s`.`%s` to %s", db_name, table_name, dump_file)
         try:
@@ -141,6 +142,9 @@ def process_table(cursor, connection, db_name: str, table: dict, conn_params: di
             msg = f"Error checking foreign keys for `{table_name}`: {e}"
             results.append(msg)
             logger.error(msg)
+
+    batch_size = table.get("delete_batch_size")
+    batch_delay = table.get("delete_batch_delay", 0)
 
     delete_strategy = table.get("delete_strategy", None)
     if delete_strategy:
