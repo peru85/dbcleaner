@@ -8,6 +8,8 @@ import datetime
 import os
 import logging
 import time
+import gzip
+import shutil
 from dotenv import load_dotenv
 
 logging.basicConfig(
@@ -103,11 +105,21 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     else:
         logger.info("Dumping table `%s`.`%s` to %s", db_name, table_name, dump_file)
         try:
-            #subprocess.run(bash_cmd, shell=True, check=True, executable="/bin/bash")
-            subprocess.run(["bash", "-c", bash_cmd], check=True)
-            logger.info("Dump successful: %s", dump_file)
-        except subprocess.CalledProcessError as e:
-            logger.error("Error dumping table `%s`: %s", table_name, e)
+            proc = subprocess.Popen(dump_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            with gzip.open(dump_file, 'wb') as f_out:
+                shutil.copyfileobj(proc.stdout, f_out)
+            stderr = proc.stderr.read().decode('utf-8', errors='ignore')
+            retcode = proc.wait()
+            if retcode != 0:
+                logger.error("Error dumping table `%s`: %s", table_name, stderr)
+                if os.path.exists(dump_file):
+                    os.remove(dump_file)
+                return None
+            logger.info("Dump compressed to %s", dump_file)
+        except Exception as e:
+            logger.error("Error during streaming dump for `%s`: %s", table_name, e)
+            if os.path.exists(dump_file):
+                os.remove(dump_file)
             return None
 
     if dump_storage == "s3" and dry_run :
