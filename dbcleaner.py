@@ -90,7 +90,7 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
         f"{mysqldump_cmd} -h {conn_params['host']} -u {conn_params['user']} "
         f"-p{conn_params['password']} {db_name} {table_name} | gzip > {dump_file}"
     )
-    masked_cmd = cmd.replace(f"-p{password}", "-p****")
+    masked_cmd = cmd.replace(f"-p{conn_params['password']}", "-p****")
 
     if dry_run:
         logger.info("[DRY RUN] Would execute dump command: %s", masked_cmd)
