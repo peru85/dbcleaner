@@ -7,6 +7,7 @@ import subprocess
 import datetime
 import os
 import logging
+import time
 from dotenv import load_dotenv
 
 logging.basicConfig(
@@ -154,24 +155,67 @@ def process_table(cursor, connection, db_name: str, table: dict, conn_params: di
                 msg = f"Error truncating table `{table_name}`: {e}"
                 results.append(msg)
                 logger.error(msg)
+
         elif delete_strategy.lower() == "condition":
-            delete_condition = table.get("delete_condition")
-            if delete_condition:
-                try:
-                    sql = f"DELETE FROM `{table_name}` WHERE {delete_condition};"
+            cond = table.get("delete_condition")
+            if not cond:
+                msg = f"No delete_condition for {table_name}";
+                results.append(msg);
+                logger.warning(msg)
+            else:
+                batch = table.get("delete_batch_size")
+                delay = table.get("delete_batch_delay", 0)
+                if batch:
+                    logger.info("Condition delete in batches of %s, delay %s", batch, delay)
+                    while True:
+                        sql = f"DELETE FROM `{table_name}` WHERE {cond} LIMIT {batch};"
+                        run_sql(cursor, connection, sql, dry_run)
+                        affected = cursor.rowcount if not dry_run else 0
+                        msg = f"Batch deleted {affected} rows from {table_name}";
+                        results.append(msg);
+                        logger.info(msg)
+                        if affected < batch: break
+                        if delay and not dry_run: time.sleep(delay)
+                else:
+                    sql = f"DELETE FROM `{table_name}` WHERE {cond};"
                     run_sql(cursor, connection, sql, dry_run)
                     affected = cursor.rowcount if not dry_run else 0
-                    msg = f"Deleted {affected} rows from `{table_name}` using condition."
+                    msg = f"Deleted {affected} rows from {table_name} using condition";
+                    results.append(msg);
+                    logger.info(msg)
+
+        elif delete_strategy == "older_than_days":
+            days = table.get("delete_older_than_days")
+            date_col = table.get("date_column", "date")
+            if days is None:
+                logger.warning("No delete_older_than_days specified for %s; skipping.", table_name)
+            else:
+                thresh = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+                condition = f"{date_col} < '{thresh}'"
+
+                batch_size = table.get("delete_batch_size")
+                batch_delay = table.get("delete_batch_delay", 0)
+
+                if batch_size:
+                    logger.info("Deleting in batches of %s with %ss delay", batch_size, batch_delay)
+                    while True:
+                        sql = f"DELETE FROM `{table_name}` WHERE {condition} LIMIT {batch_size};"
+                        run_sql(cursor, connection, sql, dry_run)
+                        affected = cursor.rowcount if not dry_run else 0
+                        logger.info("Batch deleted %s rows from %s", affected, table_name)
+                        results.append(f"Batch deleted {affected} rows from `{table_name}`")
+                        if affected < batch_size:
+                            break
+                        if batch_delay and not dry_run:
+                            time.sleep(batch_delay)
+                else:
+                    # single delete
+                    sql = f"DELETE FROM `{table_name}` WHERE {condition};"
+                    run_sql(cursor, connection, sql, dry_run)
+                    affected = cursor.rowcount if not dry_run else 0
+                    msg = f"Deleted {affected} rows older than {days} days from `{table_name}`"
                     results.append(msg)
                     logger.info(msg)
-                except Error as e:
-                    msg = f"Error deleting rows from `{table_name}`: {e}"
-                    results.append(msg)
-                    logger.error(msg)
-            else:
-                msg = f"No delete_condition provided for `{table_name}` with condition strategy."
-                results.append(msg)
-                logger.warning(msg)
 
     if table.get("run_optimize", False):
         try:

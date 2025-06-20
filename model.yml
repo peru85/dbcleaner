@@ -16,3 +16,10 @@ databases:
         run_optimize: false
         delete_strategy: truncate
         check_foreign_keys: true
+      - name: test1
+        delete_strategy: older_than_days
+        delete_older_than_days: 30
+        date_column: created_at
+
+        delete_batch_size: 1000
+        delete_batch_delay: 2
