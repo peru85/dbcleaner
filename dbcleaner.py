@@ -77,13 +77,9 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     file_name = f"{db_name}_{table_name}_{timestamp}.sql.gz"
 
     dump_storage = table_config.get("dump_storage", "local").lower()
-    if dump_storage == "local":
-        dump_path = table_config.get("dump_path", ".")
-        os.makedirs(dump_path, exist_ok=True)
-        dump_file = os.path.join(dump_path, file_name)
-    else:
-        # for s3
-        dump_file = file_name
+    dump_path = table_config.get("dump_path", ".")
+    os.makedirs(dump_path, exist_ok=True)
+    dump_file = os.path.join(dump_path, file_name)
 
     mysqldump_cmd = conn_params.get("mysqldump_path", "mysqldump")
     cmd = (

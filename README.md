@@ -35,7 +35,7 @@ docker build -t dbcleaner:latest .
 ```
 3. run the container with args
 ```bash
-docker run --rm maintenance:latest --dry-run --config model.yml
+docker run --rm dbcleaner:latest --dry-run --config model.yml
 ```
 note: the default model.yml was burned in the container image so we can test it easily
 
@@ -61,3 +61,11 @@ If you want to use your custom model you can mount it like this:
 ```bash
 docker run   -v D:\OneDrive\PythonProjects\dbCleaner\model2.yml:/app/model2.yml --rm maintenance:latest --dry-run --config model2.yml
 ```
+If you will dump larger tables take care of your disk space as by default, the container will dump the table in itself.
+If you want, you can mount a larger volume from the host os to your dump_path defined internal path like:
+```bash
+docker run   -v /dumps/:/app/dumps/ --rm maintenance:latest --dry-run --config model2.yml
+```
+and set
+dump_path: /dumps
+in your model.
