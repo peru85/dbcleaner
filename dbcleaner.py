@@ -81,6 +81,10 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     os.makedirs(dump_path, exist_ok=True)
     dump_file = os.path.join(dump_path, file_name)
 
+    host = conn_params['host']
+    user = conn_params['user']
+    password = conn_params['password']
+
     mysqldump_cmd = conn_params.get("mysqldump_path", "mysqldump")
     cmd = (
         f"{mysqldump_cmd} -h {conn_params['host']} -u {conn_params['user']} "
@@ -88,12 +92,18 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     )
     masked_cmd = cmd.replace(f"-p{conn_params['password']}", "-p****")
 
+    bash_cmd = (
+        f"set -o pipefail; {mysqldump_cmd} -h {host} -u {user} -p{password} "
+        f"{db_name} {table_name} | gzip > {dump_file}"
+    )
+    masked_bash_cmd = bash_cmd.replace(f"-p{password}", "-p****")
+
     if dry_run:
-        logger.info("[DRY RUN] Would execute dump command: %s", masked_cmd)
+        logger.info("[DRY RUN] Would execute dump command: %s", masked_bash_cmd)
     else:
         logger.info("Dumping table `%s`.`%s` to %s", db_name, table_name, dump_file)
         try:
-            subprocess.run(cmd, shell=True, check=True)
+            subprocess.run(bash_cmd, shell=True, check=True, executable="/bin/bash")
             logger.info("Dump successful: %s", dump_file)
         except subprocess.CalledProcessError as e:
             logger.error("Error dumping table `%s`: %s", table_name, e)
