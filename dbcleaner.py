@@ -120,8 +120,15 @@ def process_table(cursor, connection, db_name: str, table: dict, conn_params: di
     results.append(msg)
     logger.info(msg)
 
+
     if table.get("dump_before", False):
-        dump_table(db_name, table_name, conn_params, table, dry_run)
+        success = dump_table(db_name, table_name, conn_params, table, dry_run)
+    if success is None:
+        # failsafe: stop further processing on dump failure
+        msg = f"Skipping `{table_name}` due to dump failure."
+        results.append(msg)
+        logger.error(msg)
+        return
 
     if table.get("check_foreign_keys", False):
         try:
