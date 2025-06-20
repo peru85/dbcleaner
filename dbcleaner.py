@@ -103,7 +103,8 @@ def dump_table(db_name: str, table_name: str, conn_params: dict, table_config: d
     else:
         logger.info("Dumping table `%s`.`%s` to %s", db_name, table_name, dump_file)
         try:
-            subprocess.run(bash_cmd, shell=True, check=True, executable="/bin/bash")
+            #subprocess.run(bash_cmd, shell=True, check=True, executable="/bin/bash")
+            subprocess.run(["bash", "-c", bash_cmd], check=True)
             logger.info("Dump successful: %s", dump_file)
         except subprocess.CalledProcessError as e:
             logger.error("Error dumping table `%s`: %s", table_name, e)
